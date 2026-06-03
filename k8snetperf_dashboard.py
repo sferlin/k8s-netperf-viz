@@ -998,27 +998,28 @@ if not pod_cpu_df.empty and "Pod Name" in pod_cpu_df.columns:
                 + " vm=" + prof_pod["VM mode"].astype(str)
                 + " svc=" + prof_pod["Service"].astype(str)
             )
-            prof_pod["Bar Style"] = prof_pod["Parallelism"].astype(int).map(
-                {1: "p=1", 2: "p=2 (hatched)"}
-            ).fillna("p=" + prof_pod["Parallelism"].astype(int).astype(str))
-            prof_pod.sort_values(["Pod", "config", "Bar Style"], inplace=True)
+            prof_pod["config_p"] = prof_pod["config"] + " p=" + prof_pod["Parallelism"].astype(int).astype(str)
+            config_p_order = sort_configs_by_base(prof_pod["config_p"].unique())
 
             fig = px.bar(
                 prof_pod,
                 x="Pod",
                 y="Utilization (%)",
-                color="config",
-                pattern_shape="Bar Style",
-                pattern_shape_map={"p=1": "", "p=2 (hatched)": "/"},
+                color="config_p",
                 facet_row="Role",
                 facet_col="Message Size",
                 barmode="group",
-                title=f"{pod_profile} — Pod CPU Utilization",
-                category_orders={
-                    "Bar Style": ["p=1", "p=2 (hatched)"],
-                    "config": sorted(prof_pod["config"].unique()),
-                },
+                title=f"{pod_profile} — Pod CPU Utilization<br><sup>hatched = p=2</sup>",
+                category_orders={"config_p": config_p_order},
             )
+            colors = px.colors.qualitative.Plotly
+            base_configs = sorted(prof_pod["config"].unique())
+            config_colors = {cfg: colors[i % len(colors)] for i, cfg in enumerate(base_configs)}
+            for trace in fig.data:
+                base = re.sub(r"\s*p=\d+", "", trace.name).strip()
+                trace.marker.color = config_colors.get(base, trace.marker.color)
+                if "p=2" in trace.name:
+                    trace.marker.pattern.shape = "/"
             fig.update_yaxes(title_text="", matches="y")
             fig.update_yaxes(title_text="CPU Utilization (%)", col=1)
             fig.update_xaxes(title_text="", tickangle=45)
@@ -1063,22 +1064,28 @@ if not pod_mem_df.empty and "Pod Name" in pod_mem_df.columns:
                 + " vm=" + prof_mem["VM mode"].astype(str)
                 + " svc=" + prof_mem["Service"].astype(str)
             )
-            prof_mem["Bar Style"] = prof_mem["Parallelism"].astype(int).map(
-                {1: "p=1", 2: "p=2 (hatched)"}
-            ).fillna("p=" + prof_mem["Parallelism"].astype(int).astype(str))
+            prof_mem["config_p"] = prof_mem["config"] + " p=" + prof_mem["Parallelism"].astype(int).astype(str)
+            config_p_order = sort_configs_by_base(prof_mem["config_p"].unique())
 
             fig = px.bar(
                 prof_mem,
                 x="Pod",
                 y="RSS (MB)",
-                color="config",
-                pattern_shape="Bar Style",
-                pattern_shape_map={"p=1": "", "p=2 (hatched)": "/"},
+                color="config_p",
                 facet_row="Role",
                 facet_col="Message Size",
                 barmode="group",
-                title=f"{mem_profile} — Pod Memory RSS",
+                title=f"{mem_profile} — Pod Memory RSS<br><sup>hatched = p=2</sup>",
+                category_orders={"config_p": config_p_order},
             )
+            colors = px.colors.qualitative.Plotly
+            base_configs = sorted(prof_mem["config"].unique())
+            config_colors = {cfg: colors[i % len(colors)] for i, cfg in enumerate(base_configs)}
+            for trace in fig.data:
+                base = re.sub(r"\s*p=\d+", "", trace.name).strip()
+                trace.marker.color = config_colors.get(base, trace.marker.color)
+                if "p=2" in trace.name:
+                    trace.marker.pattern.shape = "/"
             fig.update_yaxes(title_text="", matches="y")
             fig.update_yaxes(title_text="RSS (MB)", col=1)
             fig.update_xaxes(title_text="", tickangle=45)
