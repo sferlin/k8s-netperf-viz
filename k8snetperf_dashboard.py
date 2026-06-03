@@ -10,7 +10,9 @@
 #
 # ------------------------------------------------------------
 
+import argparse
 import re
+import sys
 from io import StringIO
 from pathlib import Path
 
@@ -21,6 +23,23 @@ import plotly.graph_objects as go
 import plotly.io as pio
 import requests
 import streamlit as st
+
+parser = argparse.ArgumentParser(
+    description="Streamlit dashboard for k8s-netperf benchmark analysis.",
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog="""\
+data input (via the sidebar once the app is running):
+  Build log URL    Paste a CI build-log.txt URL to fetch and parse
+  File upload      Upload a k8snetperf_raw.csv or build-log.txt file
+  Local CSV        Place k8snetperf_raw.csv in the working directory
+
+examples:
+  streamlit run k8snetperf_dashboard.py
+  streamlit run k8snetperf_dashboard.py -- --server.address 0.0.0.0 --server.port 8080
+  streamlit run k8snetperf_dashboard.py -- -h
+""",
+)
+parser.parse_known_args(sys.argv[1:])
 
 
 # ============================================================
